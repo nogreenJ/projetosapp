@@ -24,3 +24,4 @@ Quando uma atividade é criada, é armazenada sua data de criação. Diferente d
 
 Na criação de um projeto, apenas é possível inserir, editar ou excluir atividades. Atividades só podem ser iniciadas, canceladas ou finalizadas em processos cadastrados, a fim de devidamente guardar o histórico do projeto.
 
+![Diagrama de Classe](https://github.com/user-attachments/assets/c7931871-f82a-439f-b041-37d732ce5363)
