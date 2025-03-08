@@ -4,6 +4,8 @@ import java.io.Serializable;
 import java.util.Date;
 
 import com.agprojeto.projetosapp.model.enumerations.AtividadeStatus;
+import com.agprojeto.projetosapp.utils.response.Response;
+import com.agprojeto.projetosapp.utils.response.ResponseStatus;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 
 import jakarta.persistence.Column;
@@ -43,10 +45,12 @@ public class Atividade implements Serializable {
     private Date dataPrevista;
     
     @Temporal(TemporalType.TIMESTAMP)
+    private Date dataInicio;
+    
+    @Temporal(TemporalType.TIMESTAMP)
     private Date dataConclusao;
 
     @Enumerated(EnumType.STRING)
-    @Column(columnDefinition = "VARCHAR(16)")
     private AtividadeStatus status = AtividadeStatus.NOVO;
 
     @JoinColumn(name = "projeto_id")
@@ -101,6 +105,14 @@ public class Atividade implements Serializable {
         this.dataPrevista = dataPrevista;
     }
 
+    public Date getDataInicio() {
+        return dataInicio;
+    }
+
+    public void setDataInicio(Date dataInicio) {
+        this.dataInicio = dataInicio;
+    }
+
     public Date getDataConclusao() {
         return dataConclusao;
     }
@@ -121,7 +133,28 @@ public class Atividade implements Serializable {
         return projetoParent;
     }
 
-    public void setProjetoParent(Projeto projetoParent) {
+    public Atividade setProjetoParent(Projeto projetoParent) {
         this.projetoParent = projetoParent;
+        return this;
+    }
+
+    /**
+     * Validações básicas da entidade
+     * @return Resposta com mensagem de aviso caso não seja válida, ou resposta com status = sucesso caso for
+     */
+    public Response validate(){
+        if(this.titulo == null || this.titulo.length() == 0){
+            return new Response(ResponseStatus.WARNING, "É obrigatório informar o título da Atividade");
+        }
+        if(this.descricao == null || this.descricao.length() == 0){
+            return new Response(ResponseStatus.WARNING, "É obrigatório informar a descrição da Atividade");
+        }
+        if(this.dataPrevista == null){
+            return new Response(ResponseStatus.WARNING, "É obrigatório informar a data prevista do Projeto");
+        }
+        if(this.projetoParent == null){
+            return new Response(ResponseStatus.WARNING, "É obrigatório informar o Projeto");
+        }
+        return null;
     }
 }

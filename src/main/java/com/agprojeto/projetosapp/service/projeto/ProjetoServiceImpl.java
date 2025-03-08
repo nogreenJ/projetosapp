@@ -36,7 +36,7 @@ public class ProjetoServiceImpl implements ProjetoService {
 
     @Override
     public Optional<Projeto> findProjetoById(Integer projetoId) {
-        return projetoRepository.findByIdWithCliente(projetoId);
+        return projetoRepository.findByIdClienteAtividades(projetoId);
     }
 
     /**
@@ -54,6 +54,8 @@ public class ProjetoServiceImpl implements ProjetoService {
      */
     public void finalizarProjeto(Integer projetoId) {
         updateStatusProjeto(projetoId, ProjetoStatus.FINALIZADO);
+        //Atualiza atividades NOVAS e EM DESENVOLVIMENTO para FINALIZADAS
+        projetoRepository.atualizaAtividadesOnFinalizar(projetoId);
     }
 
     /**
@@ -62,6 +64,8 @@ public class ProjetoServiceImpl implements ProjetoService {
      */
     public void cancelarProjeto(Integer projetoId) {
         updateStatusProjeto(projetoId, ProjetoStatus.CANCELADO);
+        //Atualiza atividades NOVAS e EM DESENVOLVIMENTO para CANCELADAS
+        projetoRepository.atualizaAtividadesOnCancelar(projetoId);
     }
 
     /**
@@ -142,6 +146,8 @@ public class ProjetoServiceImpl implements ProjetoService {
         projetoBD.setDataPrevista(projeto.getDataPrevista());
         projetoBD.setDescricao(projeto.getDescricao());
         projetoBD.setAtividadeList(projeto.getAtividadeList());
+
+        projetoBD.bindEntity();
 
         return projetoRepository.save(projetoBD);
     }

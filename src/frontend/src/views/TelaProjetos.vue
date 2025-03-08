@@ -16,7 +16,7 @@
                     </Button>
                 </div>
             </div>
-            <DataTable :value="projetoLista" tableStyle="" paginator :rows="12">
+            <DataTable :value="projetoLista" tableStyle="" paginator :rows="12" sortField="id" :sortOrder="-1">
                 <Column field="id" header="Código" style="width: 7%"></Column>
                 <Column field="status" header="Status" style="width: 10%">
                     <template #body="slotProps">
@@ -164,12 +164,14 @@
                         </div>
                     </div>
                 </Fieldset>
+                <!--Componente responsável pelas atividades do projeto-->
+                <AtividadesMinicrud ref="atividadesLst" :projeto="projetoEdt"/>
             </Form>
         </div>
     </div>
 
     <!--Modal de confirmação de deleção de projetos-->
-    <Dialog v-model:visible="showDeleteModal" modal header="Excluir Projeto" :style="{ width: '30rem', 'margin-top': '-300px'}">
+    <Dialog v-model:visible="showDeleteModal" modal header="Excluir Projeto" :style="{ width: '30rem', 'margin-top': '-300px'}" :draggable="false">
         <div>
             Deseja realmente excluir o Projeto <b>{{projetoEdt.id}} - {{projetoEdt.titulo}}</b>?
         </div>
@@ -180,7 +182,7 @@
     </Dialog>
 
     <!--Modal de confirmação de finalização/cancelamento de projetos-->
-    <Dialog v-model:visible="showFinalizarProjeto" modal header="Finalizar Projeto" :style="{ width: '30rem', 'margin-top': '-300px'}">
+    <Dialog v-model:visible="showFinalizarProjeto" modal header="Finalizar Projeto" :style="{ width: '30rem', 'margin-top': '-300px'}" :draggable="false">
         <div>
             Deseja realmente <b>{{ isFinalizar ? "finalizar" : "cancelar" }}</b> o Projeto <b>{{projetoEdt.id}} - {{projetoEdt.titulo}}</b>?
         </div>
@@ -192,7 +194,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, provide } from "vue";
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import { useToast } from 'primevue/usetoast';
@@ -202,6 +204,7 @@ import InputText from 'primevue/inputtext';
 import { Form } from "@primevue/forms";
 import { Fieldset, DatePicker } from "primevue";
 import ClienteSelect from "@/components/ClienteSelect.vue";
+import AtividadesMinicrud from "@/components/AtividadesMinicrud.vue";
 import { dateObjToBRDate } from "@/assets/DateUtils";
 import { renderStatusProjetoName } from "@/assets/Utils";
 
@@ -215,28 +218,22 @@ export default {
         Fieldset,
         Form,
         DatePicker,
-        ClienteSelect
+        ClienteSelect,
+        AtividadesMinicrud
     },
     methods: { dateObjToBRDate, renderStatusProjetoName },
     name: 'TelaProjetos',
     setup(){
-        const defaultProjeto = {
-            id: null,
-            titulo: "",
-            dataPrevista: "",
-            descricao: "",
-            status: "EM_DESENVOLVIMENTO",
-            clienteParent: {id: ""},
-        }
+        const projetoLista = ref([]);
+        const projetoEdt = ref({});
+        const isEditar = ref(true);
+        const showEdtForm = ref(false);
+        const showDeleteModal = ref(false);
+        const showFinalizarProjeto = ref(false);
+        //True se for finalizar, false se for cancelar
+        const isFinalizar = ref(false);
 
-        let projetoLista = ref([]);
-        let projetoEdt = ref(defaultProjeto);
-        let isEditar = ref(true);
-        let showEdtForm = ref(false);
-        let showDeleteModal = ref(false);
-        let showFinalizarProjeto = ref(false);
-        //True se forfinalizar, false se for cancelar
-        let isFinalizar = ref(false);
+        provide('projeto', projetoEdt);
 
         const toast = useToast();
 
@@ -290,7 +287,15 @@ export default {
         };
 
         const cleanProjeto = () =>{
-            projetoEdt.value = defaultProjeto;
+            projetoEdt.value = {
+                id: null,
+                titulo: "",
+                dataPrevista: "",
+                descricao: "",
+                status: "EM_DESENVOLVIMENTO",
+                clienteParent: {id: ""},
+                atividades: []
+            };
             errors.value = { titulo: "", descricao: "", clienteParent: "" };
         }
 
@@ -325,7 +330,7 @@ export default {
         // Função que é chamada quando o usuário confirma a finalização/deleção
         const confirmFinaliza = () => {
             if (projetoEdt.value && projetoEdt.value.id) {
-                fetch((isFinalizar.value ? "/api/projeto/finalizar/" : "/api/projeto/cancelar/") + projetoEdt.value.id, { method: "POST" })
+                fetch((isFinalizar.value ? "/api/projeto/finalizar/" : "/api/projeto/cancelar/") + projetoEdt.value.id, { method: "PUT" })
                     .then((response) => response.json())
                     .then((data) => {
                         if (data.status == "SUCCESS") {
@@ -372,7 +377,7 @@ export default {
         const saveProjeto = () => {
             if (!validateForm()) return;
             projetoEdt.value.dataCriacao = "";
-            
+
             fetch("/api/projeto", {
                 method: isEditar.value ? "PUT" : "POST",
                 headers: {"Content-Type": "application/json"},
@@ -430,7 +435,7 @@ export default {
     }
 
     .header {
-        padding-top: 20px;
+        padding-top: 12px;
     }
 
     .actionsTopBar {

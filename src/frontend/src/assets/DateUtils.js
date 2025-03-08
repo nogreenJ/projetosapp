@@ -2,7 +2,11 @@ const dateObjToBRDate = (date) =>{
     if(!date){
         return "";
     }
-    return new Date(date).toLocaleDateString();
+    const dateObj = new Date(date);
+    if(dateObj == "Invalid Date"){
+        return date;
+    }
+    return dateObj.toLocaleDateString();
 }
 
 module.exports = {

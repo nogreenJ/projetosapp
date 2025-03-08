@@ -107,7 +107,7 @@ public class ProjetoController extends ControllerSuperclass {
      * @param projetoId O identificador do projeto a ser finalizado
      * @return Uma resposta indicando se houve sucesso
      */
-    @PostMapping("/finalizar/{id}")
+    @PutMapping("/finalizar/{id}")
     public Response finalizarProjetoById(@PathVariable("id") Integer projetoId) {
         try{
             projetoService.finalizarProjeto(projetoId);
@@ -122,7 +122,7 @@ public class ProjetoController extends ControllerSuperclass {
      * @param projetoId O identificador do projeto a ser cancelado
      * @return Uma resposta indicando se houve sucesso
      */
-    @PostMapping("/cancelar/{id}")
+    @PutMapping("/cancelar/{id}")
     public Response cancelarProjetoById(@PathVariable("id") Integer projetoId) {
         try{
             projetoService.cancelarProjeto(projetoId);

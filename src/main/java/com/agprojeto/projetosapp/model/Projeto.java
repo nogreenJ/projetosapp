@@ -3,12 +3,14 @@ package com.agprojeto.projetosapp.model;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.agprojeto.projetosapp.model.enumerations.ProjetoStatus;
 import com.agprojeto.projetosapp.utils.response.Response;
 import com.agprojeto.projetosapp.utils.response.ResponseStatus;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -56,7 +58,7 @@ public class Projeto implements Serializable {
     @ManyToOne(targetEntity = Cliente.class, fetch = FetchType.LAZY, optional = false)
     private Cliente clienteParent;
 
-    @OneToMany(mappedBy = "projetoParent", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "projetoParent", fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.REMOVE})
     @JsonManagedReference("projetoAtividades")
     private List<Atividade> atividadeList;
 
@@ -157,5 +159,15 @@ public class Projeto implements Serializable {
             return new Response(ResponseStatus.WARNING, "É obrigatório informar o cliente do Projeto");
         }
         return null;
+    }
+
+    /** 
+     * Realiza o bind das atividades do projeto
+    */
+    public Projeto bindEntity(){
+        this.atividadeList = this.atividadeList.stream()
+                                                .map(atividade -> atividade.setProjetoParent(this))
+                                                .collect(Collectors.toList());
+        return this;
     }
 }

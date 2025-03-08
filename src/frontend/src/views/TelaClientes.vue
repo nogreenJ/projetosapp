@@ -16,7 +16,7 @@
                 </Button>
             </div>
         </div>
-        <DataTable :value="clienteLista" tableStyle="" paginator :rows="12">
+        <DataTable :value="clienteLista" tableStyle="" paginator :rows="12" sortField="id" :sortOrder="-1">
             <Column field="id" header="Código" style="width: 10%"></Column>
             <Column field="nome" header="Nome" style="width: 35%"></Column>
             <Column field="email" header="E-mail" style="width: 24%">
@@ -49,7 +49,7 @@
     </div>
 
     <!--Modal de criação e edição de clientes-->
-    <Dialog v-model:visible="showEdtModal" modal header="Editar Cliente" :style="{ width: '25rem', 'margin-top': '-300px'}">
+    <Dialog v-model:visible="showEdtModal" modal header="Cliente" :style="{ width: '25rem', 'margin-top': '-300px'}" :draggable="false">
         <form @submit.prevent="saveCliente">
             <div class="row">
                 <div class="col-md-3">
@@ -94,7 +94,7 @@
     </Dialog>
 
     <!--Modal de confirmação de deleção de clientes-->
-    <Dialog v-model:visible="showDeleteModal" modal header="Excluir Cliente" :style="{ width: '30rem', 'margin-top': '-300px'}">
+    <Dialog v-model:visible="showDeleteModal" modal header="Excluir Cliente" :style="{ width: '30rem', 'margin-top': '-300px'}" :draggable="false">
         <div>
             Deseja realmente excluir o Cliente <b>{{clienteEdt.id}} - {{clienteEdt.nome}}</b>?
         </div>
@@ -124,15 +124,8 @@ export default {
     },
     name: 'TelaClientes',
     setup(){
-        const defaultCliente = {
-            id: null,
-            nome: "",
-            email: "",
-            telefone: "",
-        }
-
         let clienteLista = ref([]);
-        let clienteEdt = ref(defaultCliente);
+        let clienteEdt = ref({});
         let isEditar = ref(true);
         let showEdtModal = ref(false);
         let showDeleteModal = ref(false);
@@ -183,7 +176,12 @@ export default {
         };
 
         const cleanCliente = () =>{
-            clienteEdt.value = defaultCliente;
+            clienteEdt.value = {
+                id: null,
+                nome: "",
+                email: "",
+                telefone: "",
+            };
             errors.value = { nome: "", email: "", telefone: "" };
         }
 

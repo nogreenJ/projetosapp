@@ -41,8 +41,7 @@
 
     const loadList = () => {
         fetch("/api/cliente")
-            .then((response) => response.json())
-            .then((data) => {
+            .then((response) => response.json()) .then((data) => {
                 if(data.status == "SUCCESS"){
                     clienteLista.value = data.dataMap.list;
                 } else {
