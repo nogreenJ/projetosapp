@@ -5,6 +5,9 @@ import java.util.Date;
 import java.util.List;
 
 import com.agprojeto.projetosapp.model.enumerations.ProjetoStatus;
+import com.agprojeto.projetosapp.utils.response.Response;
+import com.agprojeto.projetosapp.utils.response.ResponseStatus;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -14,7 +17,9 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import jakarta.persistence.Temporal;
@@ -45,12 +50,14 @@ public class Projeto implements Serializable {
     private Date dataConclusao;
 
     @Enumerated(EnumType.STRING)
-    @Column(columnDefinition = "VARCHAR(16)")
     private ProjetoStatus status = ProjetoStatus.EM_DESENVOLVIMENTO;
 
+    @JoinColumn(name="CLIENTE_ID")
     @ManyToOne(targetEntity = Cliente.class, fetch = FetchType.LAZY, optional = false)
     private Cliente clienteParent;
 
+    @OneToMany(mappedBy = "projetoParent", fetch = FetchType.LAZY)
+    @JsonManagedReference("projetoAtividades")
     private List<Atividade> atividadeList;
 
     public Projeto() {
@@ -130,5 +137,25 @@ public class Projeto implements Serializable {
 
     public void setAtividadeList(List<Atividade> atividadeList) {
         this.atividadeList = atividadeList;
+    }
+
+    /**
+     * Validações básicas da entidade
+     * @return Resposta com mensagem de aviso caso não seja válida, ou resposta com status = sucesso caso for
+     */
+    public Response validate(){
+        if(this.titulo == null || this.titulo.length() == 0){
+            return new Response(ResponseStatus.WARNING, "É obrigatório informar o título do Projeto");
+        }
+        if(this.descricao == null || this.descricao.length() == 0){
+            return new Response(ResponseStatus.WARNING, "É obrigatório informar a descrição do Projeto");
+        }
+        if(this.dataPrevista == null){
+            return new Response(ResponseStatus.WARNING, "É obrigatório informar a data prevista do Projeto");
+        }
+        if(this.clienteParent == null || this.clienteParent.getId() == null){
+            return new Response(ResponseStatus.WARNING, "É obrigatório informar o cliente do Projeto");
+        }
+        return null;
     }
 }

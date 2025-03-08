@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import TelaClientes from '../views/TelaClientes.vue'
 import TelaHome from '../views/TelaHome.vue';
+import TelaProjetos from '../views/TelaProjetos.vue';
 
 const routes = [
   {
@@ -13,11 +14,11 @@ const routes = [
     name: 'Clientes',
     component: TelaClientes
   },
-  /*{
-    path: '/careers',
-    name: 'Careers',
-    component:Careers
-  },*/
+  {
+    path: '/projeto',
+    name: 'Projetos',
+    component: TelaProjetos
+  },
 ]
 
 const router = createRouter({

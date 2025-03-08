@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.agprojeto.projetosapp.utils.response.Response;
 import com.agprojeto.projetosapp.utils.response.ResponseStatus;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -36,6 +37,7 @@ public class Cliente implements Serializable {
 
     @OneToMany(targetEntity = Projeto.class, fetch = FetchType.LAZY, 
                 cascade = CascadeType.REMOVE, mappedBy = "clienteParent")
+    @JsonIgnore
     private List<Projeto> projetoList;
 
     public Cliente() {

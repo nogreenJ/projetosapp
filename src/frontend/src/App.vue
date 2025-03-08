@@ -12,6 +12,9 @@
             <div class="navbar-nav mr-auto">
               <router-link to="/cliente" class="nav-item nav-link">Clientes</router-link>
             </div>
+            <div class="navbar-nav mr-auto">
+              <router-link to="/projeto" class="nav-item nav-link">Projetos</router-link>
+            </div>
         </div>
     </nav> 
   </div>

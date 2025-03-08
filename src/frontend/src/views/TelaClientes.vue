@@ -19,8 +19,16 @@
         <DataTable :value="clienteLista" tableStyle="" paginator :rows="12">
             <Column field="id" header="Código" style="width: 10%"></Column>
             <Column field="nome" header="Nome" style="width: 35%"></Column>
-            <Column field="email" header="E-mail" style="width: 24%"></Column>
-            <Column field="telefone" header="Telefone" style="width: 24%"></Column>
+            <Column field="email" header="E-mail" style="width: 24%">
+                <template #body="slotProps">
+                    {{ slotProps.data.email ? slotProps.data.email : '-' }}
+                </template>
+            </Column>
+            <Column field="telefone" header="Telefone" style="width: 24%">
+                <template #body="slotProps">
+                    {{ slotProps.data.telefone ? slotProps.data.telefone : '-' }}
+                </template>
+            </Column>
             <Column header="Ações"  style="width: 7%">
                 <template #body="slotProps">
                     <div>
@@ -117,7 +125,7 @@ export default {
     name: 'TelaClientes',
     setup(){
         const defaultCliente = {
-            id: "",
+            id: null,
             nome: "",
             email: "",
             telefone: "",
@@ -137,7 +145,12 @@ export default {
         });
 
         const toastMsg = (params) =>{
-            params.status = params.status.toLowerCase();
+            if(!params.status || !params.descricao){
+                params.status = "error";
+                params.descricao = "Erro.";
+            } else {
+                params.status = params.status.toLowerCase();
+            }
             toast.add({
                 severity: params.status == "warning" ? 'warn' : params.status,
                 summary: params.descricao,
@@ -283,6 +296,15 @@ export default {
 
     .row {
         margin: -2px 0;
+    }
+
+    form{
+        .row {
+            margin: 3px 0;
+        } 
+        label {
+            padding-top: 9px;
+        } 
     }
 
     .modal-footer {
