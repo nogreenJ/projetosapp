@@ -18,15 +18,19 @@
         </div>
         <DataTable :value="clienteLista" tableStyle="" paginator :rows="12" sortField="id" :sortOrder="-1">
             <Column field="id" header="Código" style="width: 10%"></Column>
-            <Column field="nome" header="Nome" style="width: 35%"></Column>
+            <Column field="nome" header="Nome" style="width: 35%">
+                <template #body="slotProps">
+                    <span class="cut-text">{{ slotProps.data.nome}}</span>
+                </template>
+            </Column>
             <Column field="email" header="E-mail" style="width: 24%">
                 <template #body="slotProps">
-                    {{ slotProps.data.email ? slotProps.data.email : '-' }}
+                    <span class="cut-text">{{ slotProps.data.email ? slotProps.data.email : '-' }}</span>
                 </template>
             </Column>
             <Column field="telefone" header="Telefone" style="width: 24%">
                 <template #body="slotProps">
-                    {{ slotProps.data.telefone ? slotProps.data.telefone : '-' }}
+                    <span class="cut-text">{{ slotProps.data.telefone ? slotProps.data.telefone : '-' }}</span>
                 </template>
             </Column>
             <Column header="Ações"  style="width: 7%">
@@ -129,84 +133,9 @@ export default {
         let isEditar = ref(true);
         let showEdtModal = ref(false);
         let showDeleteModal = ref(false);
-        const toast = useToast();
 
-        let errors = ref({
-            nome: "",
-            email: "",
-            telefone: "",
-        });
-
-        const toastMsg = (params) =>{
-            if(!params.status || !params.descricao){
-                params.status = "error";
-                params.descricao = "Erro.";
-            } else {
-                params.status = params.status.toLowerCase();
-            }
-            toast.add({
-                severity: params.status == "warning" ? 'warn' : params.status,
-                summary: params.descricao,
-                life: 5000
-            });
-        }
-
-        const editCliente = (cliente) => {
-            showEdtModal.value = true;
-            isEditar.value = true;
-            cleanCliente();
-            if(cliente && cliente.id){
-                fetch("/api/cliente/" + cliente.id)
-                    .then((response) => response.json())
-                    .then((data) => {
-                        if(data.status == "SUCCESS"){
-                            clienteEdt.value = data.dataMap.obj;
-                        } else {
-                            toastMsg(data); 
-                            showEdtModal.value = false;
-                        }
-                    });
-            }
-        };
-
-        const newCliente = () => {
-            cleanCliente();
-            isEditar.value = false;
-            showEdtModal.value = true;
-        };
-
-        const cleanCliente = () =>{
-            clienteEdt.value = {
-                id: null,
-                nome: "",
-                email: "",
-                telefone: "",
-            };
-            errors.value = { nome: "", email: "", telefone: "" };
-        }
-
-        const deleteCliente = (cliente) => {
-            clienteEdt.value = cliente;
-            showDeleteModal.value = true;
-        };
-
-        // Função que é chamada quando o usuário confirma a deleção
-        const confirmDelete = () => {
-            if (clienteEdt.value && clienteEdt.value.id) {
-                fetch("/api/cliente/" + clienteEdt.value.id, { method: "DELETE" })
-                    .then((response) => response.json())
-                    .then((data) => {
-                        if (data.status == "SUCCESS") {
-                            loadList();
-                        }
-                        toastMsg(data);
-                    })
-                    .catch((error) => console.error("Erro ao deletar Cliente: ", error));
-                cleanCliente();
-                showDeleteModal.value = false;
-            }
-        };
-
+        //Validação de formulário
+        let errors = ref({});
         const validateForm = () => {
             errors.value = { nome: "", email: "", telefone: "" };
 
@@ -225,6 +154,90 @@ export default {
             return !errors.value.nome && !errors.value.email && !errors.value.telefone;
         };
 
+        //Alertas toast da tela
+        const toast = useToast();
+        const toastMsg = (params) =>{
+            if(!params.status || !params.descricao){
+                params.status = "error";
+                params.descricao = "Erro.";
+            } else {
+                params.status = params.status.toLowerCase();
+            }
+            toast.add({
+                severity: params.status == "warning" ? 'warn' : params.status,
+                summary: params.descricao,
+                life: 5000
+            });
+        }
+
+        //Funcionalidade para abrir formulário limpo para cadastro de novo cliente
+        const newCliente = () => {
+            cleanCliente();
+            isEditar.value = false;
+            showEdtModal.value = true;
+        };
+
+        //Funcionalidade para abrir formulário de confirmação de deleção de cliente
+        const deleteCliente = (cliente) => {
+            clienteEdt.value = cliente;
+            showDeleteModal.value = true;
+        };
+
+        //Limpeza de formulário
+        const cleanCliente = () =>{
+            clienteEdt.value = {
+                id: null,
+                nome: "",
+                email: "",
+                telefone: "",
+            };
+            errors.value = { nome: "", email: "", telefone: "" };
+        }
+
+        /**
+         * Busca cliente para edição
+         * @param cliente um objeto representando um cliente, com seu identificador
+         */
+        const editCliente = (cliente) => {
+            showEdtModal.value = true;
+            isEditar.value = true;
+            cleanCliente();
+            if(cliente && cliente.id){
+                fetch("/api/cliente/" + cliente.id)
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if(data.status == "SUCCESS"){
+                            clienteEdt.value = data.dataMap.obj;
+                        } else {
+                            toastMsg(data); 
+                            showEdtModal.value = false;
+                        }
+                    });
+            }
+        };
+
+        /**
+         * Ao confirmar deleção, realiza a chamada no endpoint através do valor do clienteEdt, definido ao clicar no botão de deleção
+         */
+        const confirmDelete = () => {
+            if (clienteEdt.value && clienteEdt.value.id) {
+                fetch("/api/cliente/" + clienteEdt.value.id, { method: "DELETE" })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (data.status == "SUCCESS") {
+                            loadList();
+                        }
+                        toastMsg(data);
+                    })
+                    .catch((error) => console.error("Erro ao deletar Cliente: ", error));
+                cleanCliente();
+                showDeleteModal.value = false;
+            }
+        };
+
+        /**
+         * Salva o cliente, seja update ou insert
+         */
         const saveCliente = () => {
             if (!validateForm()) return;
 
@@ -244,6 +257,9 @@ export default {
             .catch(error => console.error("Erro ao salvar Cliente: ", error));
         };
 
+        /**
+         * Carrega listagem completa de clientes
+         */
         const loadList = () => {
             fetch("/api/cliente")
                 .then((response) => response.json())
@@ -266,52 +282,3 @@ export default {
     }
 }
 </script>
-
-<style lang="scss">
-
-    .mainDiv {
-        padding: 0 25px;
-        border-radius: 10px;
-        height: 92.3vh;
-        background-color: var(--p-zinc-900);
-    }
-
-    .title {
-        text-align: center;
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: var(--p-datatable-header-cell-color);
-        margin-bottom: 20px;
-    }
-
-    .header {
-        padding-top: 20px;
-    }
-
-    .actionsTopBar {
-        text-align: right;
-    }
-
-    .row {
-        margin: -2px 0;
-    }
-
-    form{
-        .row {
-            margin: 3px 0;
-        } 
-        label {
-            padding-top: 9px;
-        } 
-    }
-
-    .modal-footer {
-        margin-top: 20px;
-    }
-
-    .errormsg {
-        color: red;
-        font-size: 13px;
-    }
-
-</style>

@@ -1,6 +1,6 @@
 <template>
     <!--Listagem de Projetos-->
-    <div class="mainDiv">
+    <div class="mainDiv" style="height: 92.1vh">
         <div v-if="!showEdtForm">
             <div class="row header">
                 <div class="col-md-4 offset-md-4">
@@ -57,7 +57,7 @@
                 </Column>
                 <Column header="Ações"  style="width: 13%">
                     <template #body="slotProps">
-                        <div>
+                        <div class="cut-text">
                             <Button  
                                 variant="text" :title="slotProps.data.status == 'EM_DESENVOLVIMENTO' ? 'Editar Projeto' : 'Visualizar Projeto'"
                                 @click="editProjeto(slotProps.data)">
@@ -88,7 +88,7 @@
         </div>
 
         <!--Formulário de criação e edição de projetos-->
-        <div v-if="showEdtForm" modal header="Editar Projeto" style="padding-top: 20px;">
+        <div v-if="showEdtForm" style="padding-top: 10px;">
             <div class="row header">
                 <div class="col-md-4 offset-md-4">
                     <h2 class="title" v-if="projetoEdt.status == 'EM_DESENVOLVIMENTO' && isEditar">
@@ -233,10 +233,13 @@ export default {
         //True se for finalizar, false se for cancelar
         const isFinalizar = ref(false);
 
+        //Exporta projeto para poder ser buscado pelo componente de atividades
         provide('projeto', projetoEdt);
 
+        /**
+         * Notificações toast do módulo
+         */
         const toast = useToast();
-
         const toastMsg = (params) =>{
             if(!params.status || !params.descricao){
                 params.status = "error";
@@ -251,101 +254,12 @@ export default {
             });
         }
 
-        let errors = ref({
-            titulo: "",
-            descricao: "",
-            clienteParent: "",
-            dataPrevista: "",
-        });
-
-        const editProjeto = (projeto) => {
-            showEdtForm.value = true;
-            isEditar.value = true;
-            cleanProjeto();
-            if(projeto && projeto.id){
-                fetch("/api/projeto/" + projeto.id)
-                    .then((response) => response.json())
-                    .then((data) => {
-                        if(data.status == "SUCCESS"){
-                            const obj = data.dataMap.obj;
-                            obj.dataCriacao = dateObjToBRDate(obj.dataCriacao);
-                            obj.dataPrevista = dateObjToBRDate(obj.dataPrevista);
-                            obj.dataConclusao = dateObjToBRDate(obj.dataConclusao);
-                            projetoEdt.value = obj;
-                        } else {
-                            toastMsg(data); 
-                            showEdtForm.value = false;
-                        }
-                    });
-            }
-        };
-
-        const newProjeto = () => {
-            cleanProjeto();
-            isEditar.value = false;
-            showEdtForm.value = true;
-        };
-
-        const cleanProjeto = () =>{
-            projetoEdt.value = {
-                id: null,
-                titulo: "",
-                dataPrevista: "",
-                descricao: "",
-                status: "EM_DESENVOLVIMENTO",
-                clienteParent: {id: ""},
-                atividades: []
-            };
-            errors.value = { titulo: "", descricao: "", clienteParent: "" };
-        }
-
-        const deleteProjeto = (projeto) => {
-            projetoEdt.value = projeto;
-            showDeleteModal.value = true;
-        };
-
-        // Função que é chamada quando o usuário confirma a deleção
-        const confirmDelete = () => {
-            if (projetoEdt.value && projetoEdt.value.id) {
-                fetch("/api/projeto/" + projetoEdt.value.id, { method: "DELETE" })
-                    .then((response) => response.json())
-                    .then((data) => {
-                        if (data.status == "SUCCESS") {
-                            loadList();
-                        }
-                        toastMsg(data);
-                    })
-                    .catch((error) => console.error("Erro ao deletar Projeto: ", error));
-                cleanProjeto();
-                showDeleteModal.value = false;
-            }
-        };
-
-        const finalizarProjeto = (projeto, finalCancel) => {
-            projetoEdt.value = projeto;
-            showFinalizarProjeto.value = true;
-            isFinalizar.value = finalCancel;
-        };
-
-        // Função que é chamada quando o usuário confirma a finalização/deleção
-        const confirmFinaliza = () => {
-            if (projetoEdt.value && projetoEdt.value.id) {
-                fetch((isFinalizar.value ? "/api/projeto/finalizar/" : "/api/projeto/cancelar/") + projetoEdt.value.id, { method: "PUT" })
-                    .then((response) => response.json())
-                    .then((data) => {
-                        if (data.status == "SUCCESS") {
-                            loadList();
-                        }
-                        toastMsg(data);
-                    })
-                    .catch((error) => console.error("Erro ao finalizar Projeto: ", error));
-                cleanProjeto();
-                showFinalizarProjeto.value = false;
-            }
-        };
-
+        /**
+         * Validação do formulário
+         */
+        let errors = ref({});
         const validateForm = () => {
-            errors.value = { titulo: "", descricao: "", clienteParent: "" , dataPrevista: "" };
+            errors.value = {};
 
             if (!projetoEdt.value.titulo.trim()) {
                 errors.value.titulo = "O titulo é obrigatório.";
@@ -374,6 +288,107 @@ export default {
             return !errors.value.titulo && !errors.value.descricao && !errors.value.clienteParent && !errors.value.dataPrevista;
         };
 
+        //Funcionalidade para abrir formulário limpo para cadastro de novo projeto
+        const newProjeto = () => {
+            cleanProjeto();
+            isEditar.value = false;
+            showEdtForm.value = true;
+        };
+
+        //Funcionalidade para abrir formulário de confirmação de deleção de projeto
+        const deleteProjeto = (projeto) => {
+            projetoEdt.value = projeto;
+            showDeleteModal.value = true;
+        };
+
+        //Funcionalidade para abrir formulário de confirmação de finalização/cancelamento de projeto
+        const finalizarProjeto = (projeto, finalCancel) => {
+            projetoEdt.value = projeto;
+            showFinalizarProjeto.value = true;
+            isFinalizar.value = finalCancel;
+        };
+
+        //Limpa formulário
+        const cleanProjeto = () =>{
+            projetoEdt.value = {
+                id: null,
+                titulo: "",
+                dataPrevista: "",
+                descricao: "",
+                status: "EM_DESENVOLVIMENTO",
+                clienteParent: {id: ""},
+                atividades: []
+            };
+            errors.value = {};
+        }
+
+        /**
+         * Busca projeto para edição
+         * @param projeto um objeto representando um projeto, com seu identificador
+         */
+        const editProjeto = (projeto) => {
+            showEdtForm.value = true;
+            isEditar.value = true;
+            cleanProjeto();
+            if(projeto && projeto.id){
+                fetch("/api/projeto/" + projeto.id)
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if(data.status == "SUCCESS"){
+                            const obj = data.dataMap.obj;
+                            obj.dataCriacao = dateObjToBRDate(obj.dataCriacao);
+                            obj.dataPrevista = dateObjToBRDate(obj.dataPrevista);
+                            obj.dataConclusao = dateObjToBRDate(obj.dataConclusao);
+                            projetoEdt.value = obj;
+                        } else {
+                            toastMsg(data); 
+                            showEdtForm.value = false;
+                        }
+                    });
+            }
+        };
+
+        /**
+         * Ao confirmar deleção, realiza a chamada no endpoint através do valor do projetoEdt, definido ao clicar no botão de deleção
+         */
+        const confirmDelete = () => {
+            if (projetoEdt.value && projetoEdt.value.id) {
+                fetch("/api/projeto/" + projetoEdt.value.id, { method: "DELETE" })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (data.status == "SUCCESS") {
+                            loadList();
+                        }
+                        toastMsg(data);
+                    })
+                    .catch((error) => console.error("Erro ao deletar Projeto: ", error));
+                cleanProjeto();
+                showDeleteModal.value = false;
+            }
+        };
+
+        /**
+         * Ao confirmar finalização, realiza a chamada no endpoint através do valor do projetoEdt, definido ao clicar no botão de finalização
+         */
+        const confirmFinaliza = () => {
+            if (projetoEdt.value && projetoEdt.value.id) {
+                fetch((isFinalizar.value ? "/api/projeto/finalizar/" : "/api/projeto/cancelar/") + projetoEdt.value.id, { method: "PUT" })
+                    .then((response) => response.json())
+                    .then((data) => {
+                        if (data.status == "SUCCESS") {
+                            loadList();
+                        }
+                        toastMsg(data);
+                    })
+                    .catch((error) => console.error("Erro ao finalizar Projeto: ", error));
+                cleanProjeto();
+                showFinalizarProjeto.value = false;
+            }
+        };
+
+        /**
+         * Salva o projeto, seja update ou insert
+         */
         const saveProjeto = () => {
             if (!validateForm()) return;
             projetoEdt.value.dataCriacao = "";
@@ -394,6 +409,9 @@ export default {
             .catch(error => console.error("Erro ao salvar Projeto: ", error));
         };
 
+        /**
+         * Carrega listagem completa de projetos
+         */
         const loadList = () => {
             fetch("/api/projeto")
                 .then((response) => response.json())
@@ -406,73 +424,16 @@ export default {
                 })
                 .catch(error => console.error("Erro ao listar Projetos: ", error));
         }
-
         onMounted(() => {
             loadList();
         });
 
-        return { projetoLista, isEditar, showEdtForm, showDeleteModal, projetoEdt, errors, showFinalizarProjeto, isFinalizar, 
-            finalizarProjeto, confirmFinaliza, editProjeto, deleteProjeto, newProjeto, saveProjeto, loadList, confirmDelete };
+        return { 
+            //Variáveis
+            projetoLista, isEditar, showEdtForm, showDeleteModal, projetoEdt, errors, showFinalizarProjeto, isFinalizar, 
+            //Métodos
+            finalizarProjeto, confirmFinaliza, editProjeto, deleteProjeto, newProjeto, saveProjeto, loadList, confirmDelete 
+        };
     }
 }
 </script>
-
-<style lang="scss">
-
-    .mainDiv {
-        padding: 0 25px;
-        border-radius: 10px;
-        height: 92.3vh;
-        background-color: var(--p-zinc-900);
-    }
-
-    .title {
-        text-align: center;
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: var(--p-datatable-header-cell-color);
-        margin-bottom: 20px;
-    }
-
-    .header {
-        padding-top: 12px;
-    }
-
-    .actionsTopBar {
-        text-align: right;
-    }
-
-    .row {
-        margin: -2px 0;
-    }
-
-    form{
-        .row {
-            margin: 3px 0;
-        } 
-        label {
-            padding-top: 9px;
-        } 
-    }
-
-    .modal-header {
-        display: flex;
-        flex-shrink: 0;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: flex-end;
-        margin-bottom: 20px;
-    }
-
-    .errormsg {
-        color: red;
-        font-size: 13px;
-    }
-
-    .cut-text { 
-        text-overflow: ellipsis;
-        overflow: hidden;
-        white-space: nowrap;
-    }
-
-</style>

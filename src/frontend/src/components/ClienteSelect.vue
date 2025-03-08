@@ -1,3 +1,6 @@
+<!--
+    COMPONENTE PARA SELEÇÃO DE CLIENTES CADASTRADOS NO SISTEMA
+-->
 <template>
     <div class="card flex justify-center">
         <Select 

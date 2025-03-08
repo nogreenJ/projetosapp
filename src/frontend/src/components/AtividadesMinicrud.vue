@@ -2,7 +2,7 @@
     <!--Listagem de Atividades-->
     <div class="miniDiv">
         <Fieldset pt:content:class="flex justify-center">
-            <div class="row header">
+            <div class="row header-sm">
                 <div class="col-md-4 offset-md-4">
                     <h2 class="title">
                         Atividades do Projeto
@@ -174,7 +174,7 @@
 </template>
 
 <script>
-import { ref, onMounted, inject, watch } from "vue";
+import { ref, inject, watch } from "vue";
 import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import { useToast } from 'primevue/usetoast';
@@ -198,8 +198,8 @@ export default {
     methods: { dateObjToBRDate, renderStatusAtividadeName },
     name: 'TelaAtividades',
     setup(){
+        //Recebe objeto do Projeto das atividades
         const projeto = inject('projeto');
-
         watch(projeto, () => {}, { deep: true });
 
         //Identifica se projeto possui ID, se sim, é edição e realiza operações por request
@@ -214,11 +214,11 @@ export default {
         const showDeleteModal = ref(false);
         const showFinalizarAtividade = ref(false);
         const showIniciarAtividade = ref(false);
-        //True se forfinalizar, false se for cancelar
+        //True se for finalizar atividade, false se for cancelar
         const isFinalizar = ref(false);
 
+        //Funcionalidade de Toast
         const toast = useToast();
-
         const toastMsg = (params) =>{
             if(!params.status || !params.descricao){
                 params.status = "error";
@@ -233,8 +233,84 @@ export default {
             });
         }
 
+        /**
+         * Validação do formulário
+         */
         let errors = ref({});
+        const validateForm = () => {
+            errors.value = { titulo: "", descricao: "" , dataPrevista: "" };
 
+            if (!atividadeEdt.value.titulo.trim()) {
+                errors.value.titulo = "O titulo é obrigatório.";
+            }
+            if (!atividadeEdt.value.descricao.trim()) {
+                errors.value.descricao = "A descrição é obrigatória.";
+            }
+            if (!atividadeEdt.value.dataPrevista) {
+                errors.value.dataPrevista = "Informe a Data Prevista.";
+            } else {
+                const currentDate = new Date();
+                currentDate.setHours(0,0,0,0);
+                if(typeof atividadeEdt.value.dataPrevista == "string"){
+                    var dividir = atividadeEdt.value.dataPrevista.split("/");
+                    var conquistar = new Date(dividir[2], dividir[1], dividir[0]);
+                    atividadeEdt.value.dataPrevista = conquistar;
+                }
+                if (atividadeEdt.value.dataPrevista.getTime() < currentDate.getTime()) {
+                    errors.value.dataPrevista = "A Data não pode ser anterior à data atual.";
+                }
+            }
+            return !errors.value.titulo && !errors.value.descricao && !errors.value.dataPrevista;
+        };
+
+        //Funcionalidade para abrir formulário limpo para cadastro de nova atividade
+        const newAtividade = () => {
+            cleanAtividade();
+            isEditar.value = false;
+            showEdtModal.value = true;
+        };
+        
+        //Funcionalidade para abrir formulário de confirmação de deleção de atividade
+        const deleteAtividade = (atividade) => {
+            atividadeEdt.value = atividade;
+            showDeleteModal.value = true;
+        };
+
+        //Funcionalidade para abrir formulário de confirmação de finalização/cancelamento de atividade
+        const finalizarAtividade = (atividade, finalCancel) => {
+            atividadeEdt.value = atividade;
+            showFinalizarAtividade.value = true;
+            isFinalizar.value = finalCancel;
+        };
+
+        //Funcionalidade para abrir formulário de confirmação de início de atividade
+        const iniciarAtividade = (atividade) => {
+            atividadeEdt.value = atividade;
+            showIniciarAtividade.value = true;
+        };
+
+        //Atividades só são editáveis se estiverem com status em desenvolvimento ou novo
+        const isAtividadeEditavel = () =>{
+            return atividadeEdt.value.status == 'EM_DESENVOLVIMENTO' || atividadeEdt.value.status == 'NOVO';
+        }
+
+        //Limpa formulário
+        const cleanAtividade = () =>{
+            atividadeEdt.value = {
+                id: null,
+                titulo: "",
+                dataPrevista: "",
+                descricao: "",
+                status: "NOVO",
+                timestamp: null, //Utilizado para identificar atividades ainda não persistidas no lugar do id
+            };
+            errors.value = {};
+        }
+
+        /**
+         * Busca atividade para edição, se possui id, já é persistida, então busca no banco, se não busca da listagem
+         * @param atividade objeto na linha do datatable representando atividade a editar
+         */
         const editAtividade = (atividade) => {
             showEdtModal.value = true;
             isEditar.value = true;
@@ -266,34 +342,10 @@ export default {
             toastMsg({status: "warn", descricao: "Atividade não encontrada"});
         };
 
-        const isAtividadeEditavel = () =>{
-            return atividadeEdt.value.status == 'EM_DESENVOLVIMENTO' || atividadeEdt.value.status == 'NOVO';
-        }
-
-        const newAtividade = () => {
-            cleanAtividade();
-            isEditar.value = false;
-            showEdtModal.value = true;
-        };
-
-        const cleanAtividade = () =>{
-            atividadeEdt.value = {
-                id: null,
-                titulo: "",
-                dataPrevista: "",
-                descricao: "",
-                status: "NOVO",
-                timestamp: null, //Utilizado para identificar atividades ainda não persistidas no lugar do id
-            };
-            errors.value = {};
-        }
-
-        const deleteAtividade = (atividade) => {
-            atividadeEdt.value = atividade;
-            showDeleteModal.value = true;
-        };
-
-        // Função que é chamada quando o usuário confirma a deleção
+        /**
+         * Ao confirmar deleção, se atividade possui id, já é persistida, então faz a requisição de deleção
+         * Se não apenas remove da listagem
+         */
         const confirmDelete = () => {
             if(isProjEditar() && (atividadeEdt.value && atividadeEdt.value.id)){
                 fetch("/api/atividade/" + atividadeEdt.value.id, { method: "DELETE" })
@@ -313,15 +365,12 @@ export default {
             }
         };
 
-        const finalizarAtividade = (atividade, finalCancel) => {
-            atividadeEdt.value = atividade;
-            showFinalizarAtividade.value = true;
-            isFinalizar.value = finalCancel;
-        };
-
-        // Função que é chamada quando o usuário confirma a finalização/deleção
+        /**
+         * Ao confirmar finalização, faz a requisição de finalização, funcionalidade só funciona na edição de projetos, então 
+         *  todas as atividades já estão persistidas
+         */
         const confirmFinaliza = () => {
-            if(isProjEditar() && atividadeEdt.value && atividadeEdt.value.id) {
+            if(atividadeEdt.value && atividadeEdt.value.id) {
                 fetch((isFinalizar.value ? "/api/atividade/finalizar/" : "/api/atividade/cancelar/") + atividadeEdt.value.id, { method: "PUT" })
                     .then((response) => response.json())
                     .then((data) => {
@@ -335,21 +384,15 @@ export default {
                 cleanAtividade();
                 showFinalizarAtividade.value = false;
                 return;
-            } else if (atividadeEdt.value && atividadeEdt.value.timestamp){
-                atividadeEdt.value.status = (isFinalizar.value ? "FINALIZADO" : "CANCELADO");
-                atividadeEdt.value.dataConclusao = new Date();
-                addUpdateAtividade(atividadeEdt.value)
             }
         };
 
-        const iniciarAtividade = (atividade) => {
-            atividadeEdt.value = atividade;
-            showIniciarAtividade.value = true;
-        };
-
-        // Função que é chamada quando o usuário confirma a finalização/deleção
+        /**
+         * Ao confirmar inicialização, faz a requisição de inicialização, funcionalidade só funciona na edição de projetos, então 
+         *  todas as atividades já estão persistidas
+         */
         const confirmIniciar = () => {
-            if(isProjEditar() && atividadeEdt.value && atividadeEdt.value.id) {
+            if(atividadeEdt.value && atividadeEdt.value.id) {
                 fetch("/api/atividade/iniciar/" + atividadeEdt.value.id, { method: "PUT" })
                     .then((response) => response.json())
                     .then((data) => {
@@ -363,40 +406,13 @@ export default {
                 cleanAtividade();
                 showIniciarAtividade.value = false;
                 return;
-            } else if (atividadeEdt.value && atividadeEdt.value.timestamp){
-                atividadeEdt.value.status = 'EM_DESENVOLVIMENTO';
-                atividadeEdt.value.dataInicio = new Date();
-                addUpdateAtividade(atividadeEdt.value);
             }
         };
 
-        const validateForm = () => {
-            errors.value = { titulo: "", descricao: "" , dataPrevista: "" };
-
-            if (!atividadeEdt.value.titulo.trim()) {
-                errors.value.titulo = "O titulo é obrigatório.";
-            }
-            if (!atividadeEdt.value.descricao.trim()) {
-                errors.value.descricao = "A descrição é obrigatória.";
-            }
-            if (!atividadeEdt.value.dataPrevista) {
-                errors.value.dataPrevista = "Informe a Data Prevista.";
-            } else {
-                const currentDate = new Date();
-                currentDate.setHours(0,0,0,0);
-                if(typeof atividadeEdt.value.dataPrevista == "string"){
-                    var dividir = atividadeEdt.value.dataPrevista.split("/");
-                    var conquistar = new Date(dividir[2], dividir[1], dividir[0]);
-                    atividadeEdt.value.dataPrevista = conquistar;
-                }
-                if (atividadeEdt.value.dataPrevista.getTime() < currentDate.getTime()) {
-                    errors.value.dataPrevista = "A Data não pode ser anterior à data atual.";
-                }
-            }
-
-            return !errors.value.titulo && !errors.value.descricao && !errors.value.dataPrevista;
-        };
-
+        /**
+         * Salva a atividade, se é edição de projeto, realiza a requisição para salvar
+         * Se for inclusão de projeto, irá salvar ao salvar o projeto, pois há CASCADETYPE.PERSIST
+         */
         const saveAtividade = () => {
             if (!validateForm()) return;
             if(isProjEditar()){
@@ -490,9 +506,6 @@ export default {
             }
         }
 
-        onMounted(() => {
-        });
-
         return { 
             //Variáveis
             isEditar, showEdtModal, showDeleteModal, atividadeEdt, errors, 
@@ -504,75 +517,3 @@ export default {
     }
 }
 </script>
-
-<style lang="scss">
-
-    .mainDiv {
-        padding: 0 25px;
-        border-radius: 10px;
-        height: 40vh;
-        background-color: var(--p-zinc-900);
-    }
-
-    .title {
-        text-align: center;
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: var(--p-datatable-header-cell-color);
-        margin-bottom: 20px;
-    }
-
-    .header {
-        padding-top: 20px;
-    }
-
-    .actionsTopBar {
-        text-align: right;
-    }
-
-    .row {
-        margin: -2px 0;
-    }
-
-    form{
-        .row {
-            margin: 3px 0;
-        } 
-        label {
-            padding-top: 9px;
-        } 
-    }
-
-    .modal-header {
-        display: flex;
-        flex-shrink: 0;
-        flex-wrap: wrap;
-        align-items: center;
-        justify-content: flex-end;
-        margin-bottom: 20px;
-    }
-
-    .errormsg {
-        color: red;
-        font-size: 13px;
-    }
-
-    .cut-text { 
-        text-overflow: ellipsis;
-        overflow: hidden;
-        white-space: nowrap;
-    }
-
-    .pr-0{
-        padding-right: 0 !important;
-    }
-
-    .pl-0{
-        padding-left: 0 !important;
-    }
-
-    .miniDiv{
-        margin-top: 10px;
-    }
-
-</style>
