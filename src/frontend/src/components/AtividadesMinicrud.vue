@@ -80,7 +80,7 @@
                                 <i class="fa fa-check"></i>
                             </Button>
                             <Button  
-                                v-if="slotProps.data.status == 'NOVO' && !!projeto.id"
+                                v-if="slotProps.data.status == 'NOVO' || slotProps.data.status == 'EM_DESENVOLVIMENTO' && !!projeto.id"
                                 variant="text" title="Cancelar Atividade"
                                 @click="finalizarAtividade(slotProps.data, false)">
                                 <i class="fa fa-times"></i>
